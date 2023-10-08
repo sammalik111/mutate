@@ -22,6 +22,8 @@
 
 import ast
 import astor
+import sys
+
 
 class MyVisitor(ast.NodeTransformer):
     """Notes all Numbers and all Strings. Replaces all numbers with 481 and
@@ -46,25 +48,44 @@ class MyVisitor(ast.NodeTransformer):
         # Note: some students may want: return ast.Str(s=481)
         return ast.Str(value="SE", kind=None)
 
+
+def main():
+    code = """print(111 + len("hello") + 222 + len("goodbye"))"""
+    tree = ast.parse(code)
+    tree = MyVisitor().visit(tree)
+    # Add lineno & col_offset to the nodes we created
+    ast.fix_missing_locations(tree)
+    updated_code = astor.to_source(tree)
+    return updated_code
+
+
+if __name__ == "__main__":
+    main()
+
+
+
 # Instead of reading from a file, the starter code always processes in 
 # a small Python expression literally written in this string below: 
-code = """print(111 + len("hello") + 222 + len("goodbye"))"""
+# code = """print(111 + len("hello") + 222 + len("goodbye"))"""
 
 # As a sanity check, we'll make sure we're reading the code
 # correctly before we do any processing. 
-print("Before any AST transformation")
-print("Code is: ", code)
-print("Code's output is:") 
-exec(code)      # not needed for HW3
-print()
+
+
+# print("Before any AST transformation")
+# print("Code is: ", code)
+# print("Code's output is:") 
+# exec(code)      # not needed for HW3
+# print()
 
 # Now we will apply our transformation. 
-print("Applying AST transformation")
-tree = ast.parse(code)
-tree = MyVisitor().visit(tree)
-# Add lineno & col_offset to the nodes we created
-ast.fix_missing_locations(tree)
-print("Transformed code is: ", astor.to_source(tree))
-co = compile(tree, "", "exec")
-print("Transformed code's output is:") 
-exec(co)        # not needed for HW3
+
+# print("Applying AST transformation")
+# tree = ast.parse(code)
+# tree = MyVisitor().visit(tree)
+# # Add lineno & col_offset to the nodes we created
+# ast.fix_missing_locations(tree)
+# print("Transformed code is: ", astor.to_source(tree))
+# co = compile(tree, "", "exec")
+# print("Transformed code's output is:") 
+# exec(co)        # not needed for HW3
