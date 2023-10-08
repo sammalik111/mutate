@@ -49,7 +49,7 @@ class MyVisitor(ast.NodeTransformer):
 
 
 def main(line):
-    code = """print(111 + len("hello") + 222 + len("goodbye"))"""
+    code = line
     tree = ast.parse(code)
     tree = MyVisitor().visit(tree)
     # Add lineno & col_offset to the nodes we created

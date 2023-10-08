@@ -27,18 +27,16 @@ def valid_num(mutation_num):
 
 def mutate_file(input_filename, output_filename):
     with open(input_filename, 'r') as file:
-        new_src_code = ""
+        # Read the entire content of the input file as a single string
+        input_code = file.read()
 
-        for line in file:
-            # Process each line here (e.g., wrap integers)
-            wrapped = wrap_integers.main(line)
-            
-            # Append the processed line (wrapped) to new_src_code
-            new_src_code += wrapped
+        # Process the entire code using wrap_integers
+        processed_code = wrap_integers.main(input_code)
 
-    # After processing all lines, write new_src_code to the output file
+    # Write the processed code to the output file
     with open(output_filename, 'w') as output_file:
-        output_file.write(new_src_code)
+        output_file.write(processed_code)
+
 
     
 def run(filename, mutation_num):
@@ -52,7 +50,7 @@ def run(filename, mutation_num):
     for i in range(mutations):
         # create new src code
         
-        new_file_path = "output" + str(i) + ".txt"
+        new_file_path = "output" + str(i) + ".py"
         mutate_file(filename,new_file_path)
 
         print(f"new src code has been written to '{new_file_path}'")
