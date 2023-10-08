@@ -22,11 +22,14 @@
 
 import ast
 import astor
-
+import random
 
 class MyVisitor(ast.NodeTransformer):
     """Notes all Numbers and all Strings. Replaces all numbers with 481 and
     strings with 'SE'."""
+    def __init__(self):
+        self.count_int = 0
+        self.count_str = 0
 
     # Note how we never say "if node.type == Number" or anything like that.
     # The Visitor Pattern hides that information from us. Instead, we use
@@ -39,13 +42,26 @@ class MyVisitor(ast.NodeTransformer):
         # Pattern hides that information from us. We use the return value
         # of this function and the new node we return is put in place by
         # the library. 
-        # Note: some students may want: return ast.Num(n=481) 
-        return ast.Num(value=481, kind=None)
+        # Note: some students may want: return ast.Num(n=481) a
+        self.count_int += 1
+
+        if node.n > 50:
+            # Replace Num nodes greater than 50 with a constant value
+            return ast.Num(value=100, kind=None)
+        return ast.Num(value=random.randint(1, 100), kind=None)
 
     def visit_Str(self, node):
         print("Visitor sees a string: ", ast.dump(node), " aka ", astor.to_source(node))
         # Note: some students may want: return ast.Str(s=481)
-        return ast.Str(value="SE", kind=None)
+        self.count_str += 1
+        # Replace Str nodes with random strings
+        result = ""
+        stringSize = random.randint(1, 10)
+        for i in range(stringSize):
+            result += chr(random.randint(97, 122))
+        
+
+        return ast.Str(value=result, kind=None)
 
 
 def main(line):
