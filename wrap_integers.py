@@ -22,7 +22,6 @@
 
 import ast
 import astor
-import sys
 
 
 class MyVisitor(ast.NodeTransformer):
@@ -49,7 +48,7 @@ class MyVisitor(ast.NodeTransformer):
         return ast.Str(value="SE", kind=None)
 
 
-def main():
+def main(line):
     code = """print(111 + len("hello") + 222 + len("goodbye"))"""
     tree = ast.parse(code)
     tree = MyVisitor().visit(tree)
@@ -57,11 +56,6 @@ def main():
     ast.fix_missing_locations(tree)
     updated_code = astor.to_source(tree)
     return updated_code
-
-
-if __name__ == "__main__":
-    main()
-
 
 
 # Instead of reading from a file, the starter code always processes in 

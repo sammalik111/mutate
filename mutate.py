@@ -31,7 +31,7 @@ def mutate_file(input_filename, output_filename):
 
         for line in file:
             # Process each line here (e.g., wrap integers)
-            wrapped = wrap_integers(line)
+            wrapped = wrap_integers.main(line)
             
             # Append the processed line (wrapped) to new_src_code
             new_src_code += wrapped
