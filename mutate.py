@@ -1,11 +1,69 @@
 import sys
 import os
-import wrap_integers
+import hashlib
+import ast
+import astor
+import random
 
+class MyVisitor(ast.NodeTransformer):
+    """Notes all Numbers and all Strings. Replaces all numbers with 481 and
+    strings with 'SE'."""
+    def __init__(self, seed=None):
+        self.count_int = 0
+        self.count_str = 0
+        self.random_seed = seed  # Store the seed
 
-# ERROR CHECKING #
+    def visit_Num(self, node):
+        print("Visitor sees a number: {}, aka {}".format(ast.dump(node), astor.to_source(node)))
+        self.count_int += 1
+
+        if self.random_seed is not None:
+            random.seed(self.random_seed)
+
+        if node.n > 50:
+            return ast.Num(n=100)
+        return ast.Num(n=random.randint(1, 100))
+
+    def visit_Str(self, node):
+        print("Visitor sees a string: {}, aka {}".format(ast.dump(node), astor.to_source(node)))
+        self.count_str += 1
+
+        if self.random_seed is not None:
+            random.seed(self.random_seed)
+
+        result = ""
+        string_size = random.randint(1, 10)
+        for i in range(string_size):
+            result += chr(random.randint(97, 122))
+
+        return ast.Str(s=result)
+
+    def visit_Compare(self, node):
+        for i in range(len(node.ops)):
+            if isinstance(node.ops[i], ast.GtE):
+                node.ops[i] = ast.Lt()
+            elif isinstance(node.ops[i], ast.LtE):
+                node.ops[i] = ast.Gt()
+            elif isinstance(node.ops[i], ast.Lt):
+                node.ops[i] = ast.GtE()
+            elif isinstance(node.ops[i], ast.Gt):
+                node.ops[i] = ast.LtE()
+            elif isinstance(node.ops[i], ast.Eq):
+                node.ops[i] = ast.NotEq()
+        return self.generic_visit(node)
+
+    def visit_BinOp(self, node):
+        if isinstance(node.op, ast.Add):
+            node.op = ast.Sub()
+        elif isinstance(node.op, ast.Sub):
+            node.op = ast.Add()
+        elif isinstance(node.op, ast.Mult):
+            node.op = ast.FloorDiv()
+        elif isinstance(node.op, ast.FloorDiv):
+            node.op = ast.Mult()
+        return self.generic_visit(node)
+
 def valid_file(filename):
-    # Check if the file exists in the current directory
     if os.path.exists(filename):
         pass
     else:
@@ -22,42 +80,34 @@ def valid_num(mutation_num):
             "Expected usage: python LocalTest.py TESTFILE NUM_MUTATIONS\n"
             "For example: python mutate.py testfile.py 5\n")
         exit()
-# ERROR CHECKING #
 
-
-def mutate_file(input_filename, output_filename):
+def mutate_file(input_filename, output_filename, seed_offset):
     with open(input_filename, 'r') as file:
-        # Read the entire content of the input file as a single string
         input_code = file.read()
+        code = input_code
+        tree = ast.parse(code)
+        tree = MyVisitor(seed_offset).visit(tree)
+        ast.fix_missing_locations(tree)
+        updated_code = astor.to_source(tree)
 
-        # Process the entire code using wrap_integers
-        processed_code = wrap_integers.main(input_code)
-
-    # Write the processed code to the output file
     with open(output_filename, 'w') as output_file:
-        output_file.write(processed_code)
+        if updated_code == "NONE":
+            output_file.write(input_code)
+        output_file.write(updated_code)
 
-
-    
 def run(filename, mutation_num):
     valid_file(filename)
     valid_num(mutation_num)
-
     mutations = int(mutation_num)
-    # print(filename,mutations)
 
-    # write each file out 
+    arguements = filename + mutation_num
+    hashed_seed = int(hashlib.sha256(arguements.encode()).hexdigest(), 16)
+
     for i in range(mutations):
-        # create new src code
-        
-        new_file_path = "output" + str(i) + ".py"
-        mutate_file(filename,new_file_path)
+        new_file_path = str(i) + ".py"
+        mutate_file(filename, new_file_path, hashed_seed + i)
+        print("new src code has been written to '{}'".format(new_file_path))
 
-        print(f"new src code has been written to '{new_file_path}'")
-
-    
-
-# Use this block of code to run the test via a command line
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Invalid number of arguments!\n"
@@ -66,4 +116,4 @@ if __name__ == "__main__":
     else:
         filename = sys.argv[1]
         mutation_num = sys.argv[2]
-        run(filename,mutation_num)
+        run(filename, mutation_num)
