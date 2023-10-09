@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/atlantis/Desktop/cloning/mutate/publictest-full.py", line 8, in <module>
+    import fuzzywuzzy 
+    ^^^^^^^^^^^^^^^^^
+  File "/Users/atlantis/Desktop/cloning/mutate/fuzzywuzzy.py", line 12, in <module>
+    PY3 = sys.version_info[93] != 93
+          ~~~~~~~~~~~~~~~~^^^^
+IndexError: tuple index out of range
