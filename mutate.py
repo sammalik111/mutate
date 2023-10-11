@@ -9,50 +9,64 @@ class MyVisitor(ast.NodeTransformer):
     """Notes all Numbers and all Strings. Replaces all numbers with 481 and
     strings with 'SE'."""
     def __init__(self, seed=None):
-        self.count_int = 0
-        self.count_str = 0
-        self.count_binop = 0
-        self.count_comp = 0
+        self.count_int = 0.0
+        self.count_str = 0.0
+        self.count_binop = 0.0
+        self.count_comp = 0.0
         self.random_seed = seed  # Store the seed
+        self.probAdder = 0.5
 
 
-
+    
     def visit_Num(self, node):
         print("Visitor sees a number: {}, aka {}".format(ast.dump(node), astor.to_source(node)))
-        self.count_int += 10
-        proability = self.count_int / 100
+        self.count_int += self.probAdder
+        probability = self.count_int / 100
         actual = random.random()
-        if actual < proability:
+        if actual < probability:
             self.count_int = 0
             if self.random_seed is not None:
                 random.seed(self.random_seed)
 
-            if node.n > 10:
-                return ast.Num(n=3)
-            return ast.Num(n=random.randint(0, 10))
+            # Introduce mutations that are more likely to affect the code behavior
+            if node.n > 0:
+                # Reduce the number by 1
+                return ast.Num(n=node.n - 1)
+            else:
+                # Increase the number by 1
+                return ast.Num(n=node.n + 1)
         else:
             return ast.Num(node.n)
 
+
     def visit_Str(self, node):
         print("Visitor sees a string: {}, aka {}".format(ast.dump(node), astor.to_source(node)))
-        self.count_str += 10
-        proability = self.count_str / 100
+        self.count_str += self.probAdder
+        probability = self.count_str / 100
         actual = random.random()
-        if actual < proability:
+        if actual < probability:
             self.count_str = 0
             if self.random_seed is not None:
                 random.seed(self.random_seed)
 
-            result = ""
-            string_size = random.randint(0, 10)
-            for i in range(string_size):
-                result += chr(random.randint(97, 122))
-            return ast.Str(s=result)
+            # Introduce mutations that are more likely to affect the code behavior
+            if node.s:
+                # Change the first character of the string
+                new_string = chr(random.randint(97, 122)) + node.s[1:]
+                return ast.Str(s=new_string)
+            else:
+                # Generate a completely new string
+                result = ""
+                string_size = random.randint(0, 10)
+                for i in range(string_size):
+                    result += chr(random.randint(97, 122))
+                return ast.Str(s=result)
         else:
             return ast.Str(node.s)
 
+
     def visit_Compare(self, node):
-        self.count_comp += 10
+        self.count_comp += self.probAdder
         proability = self.count_comp / 100
         actual = random.random()
         if actual < proability:
@@ -69,33 +83,49 @@ class MyVisitor(ast.NodeTransformer):
                 elif isinstance(node.ops[i], ast.Gt):
                     self.count_comp = 0
                     node.ops[i] = ast.LtE()
-                elif isinstance(node.ops[i], ast.Eq):
-                    self.count_comp = 0
-                    node.ops[i] = ast.NotEq()
+                # elif isinstance(node.ops[i], ast.Eq):
+                #     self.count_comp = 0
+                #     node.ops[i] = ast.NotEq()
             return self.generic_visit(node)
         else:
             return self.generic_visit(node)
 
     def visit_BinOp(self, node):
-        self.count_binop += 10
-        proability = self.count_binop / 100
+        self.count_binop += self.probAdder
+        probability = self.count_binop / 100
         actual = random.random()
-        if actual < proability:
+
+        if actual < probability:
+            self.count_binop = 0
+            new_op = None
+
             if isinstance(node.op, ast.Add):
-                self.count_binop = 0
-                node.op = ast.Sub()
+                new_op = ast.Sub()
             elif isinstance(node.op, ast.Sub):
-                self.count_binop = 0
-                node.op = ast.Add()
+                new_op = ast.Add()
             elif isinstance(node.op, ast.Mult):
-                self.count_binop = 0
-                node.op = ast.FloorDiv()
+                new_op = ast.FloorDiv()
+                # Change the right operand to 1/right for multiplication
+                node.right = ast.BinOp(left=ast.Num(n=1), op=ast.Div(), right=node.right)
             elif isinstance(node.op, ast.FloorDiv):
-                self.count_binop = 0
-                node.op = ast.Mult()
-            return self.generic_visit(node)
-        else:
-            return self.generic_visit(node)
+                new_op = ast.Mult()
+                # Change the right operand to 1/right for division
+                node.right = ast.BinOp(left=ast.Num(n=1), op=ast.Div(), right=node.right)
+
+            if new_op:
+                # Create a new BinOp node with the modified operator
+                new_node = ast.BinOp(left=node.left, op=new_op, right=node.right)
+
+                # Preserve the logical value of the comparison
+                if isinstance(node.op, ast.Add) or isinstance(node.op, ast.Sub):
+                    # If the original operator was Add or Sub, negate the right operand
+                    new_node.right = ast.UnaryOp(op=ast.USub(), operand=node.right)
+
+                return new_node
+
+        return self.generic_visit(node)
+
+
 
 def valid_file(filename):
     if os.path.exists(filename):
